@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}Create schema{% endblock title %}
+
+{% block content %}
+    {% include 'navbar.html' %}
+    <form enctype="multipart/form-data" class="mx-5 w-75" method="post" id="product_form">
+        {% csrf_token %}
+        <!-- main form start --- in our case product form -->
+        <div class="border-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="py-3">New schema</h2>
+                <button type="submit" name="schema" class="button btn-primary rounded py-2 px-2 h-25 my-3 border-0">
+                    Submit
+                </button>
+            </div>
+            {% for field in form %}
+                <div class="form-group w-50">
+                    <label>{{ field.label }}</label>
+                    {% if field.field.required %}
+                        <span style="color: red;" class="required">*</span>
+                    {% endif %}
+
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small style="color: grey">{{ field.help_text }}</small>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <p style="color: red">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+        <!-- schema form end --- in our case schema form -->
+
+        <!-- inline form for Images start -->
+
+        <!-- EXPLAINING with named_formsets.images as formset -->
+        <!-- Note: named_formsets is used in get_context_data function in views.py -->
+        <!-- Note: here images is our ImageFormSet name, used in get_named_formsets function in views.py -->
+        {% with named_formsets.images as formset %}
+            {{ formset.management_form }}
+            <script type="text/html" id="images-template">   // id="inlineformsetname-template"
+            <tr id="images-__prefix__" class=hide_all> // id="inlineformsetname-__prefix__"
+                {% for fields in formset.empty_form.hidden_fields %}
+                    {{ fields }}
+                {% endfor %}
+
+                {% for fields in formset.empty_form.visible_fields %}
+                    <td>{{ fields }}</td>
+                {% endfor %}
+            </tr>
+            </script>
+
+            <div class=" mt-4">
+                <h4 class="card-title">Schema columns</h4>
+                <table class="table border-0">
+                    <thead class="text-secondary">
+                    <th class="border-0 w-25">Column name</th>
+                    <th class="border-0 w-25">Column type</th>
+                    <th class="border-0">From</th>
+                    <th class="border-0">To</th>
+                    <th class="border-0 w-25">Order</th>
+                    </thead>
+                    <tbody id="item-column">  <!-- id="item-inlineformsetname" -->
+                    <!-- formset non forms errors -->
+                    {% for error in formset.non_form_errors %}
+                        <span style="color: red">{{ error }}</span>
+                    {% endfor %}
+
+                    {% for formss in formset %}
+                        {{ formss.management_form }}
+
+                        <tr id="images-{{ forloop.counter0 }}" class=hide_all>  <!-- id="inlineformsetname-counter" -->
+                            {{ formss.id }}
+                            {% for field in formss.visible_fields %}
+
+                                <td>
+                                    {{ field }}
+                                    {% for error in field.errors %}
+                                        <span style="color: red">{{ error }}</span>
+                                    {% endfor %}
+                                </td>
+                            {% endfor %}
+                            <!-- delete code -->
+                            {% if formss.instance.pk %}
+                                <td>
+                                    <a class="btn text-danger" data-toggle="modal"
+                                       data-target="#exampleModal{{ formss.instance.pk }}">
+                                        Delete
+                                    </a>
+                                    <!-- Modal -->
+                                    <div class="modal fade" id="exampleModal{{ formss.instance.pk }}" tabindex="-1"
+                                         role="dialog" aria-labelledby="exampleModalLabel{{ formss.instance.pk }}"
+                                         aria-hidden="true">
+                                        <div class="modal-dialog" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title"
+                                                        id="exampleModalLabel{{ formss.instance.pk }}">Are you sure, You
+                                                want to delete this column?</h5>
+                                                    <button type="button" class="close" data-dismiss="modal"
+                                                            aria-label="Close">
+                                                        <span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <a href="{% url 'delete_column' formss.instance.pk %}" type="button"
+                                                       class="btn btn-primary">Yes, Delete</a>
+                                                    <button type="button" class="btn btn-secondary"
+                                                            data-dismiss="modal">Close
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                <a href="#" id="add-image-button" class="btn btn-primary add-images">Add column</a>
+                <!-- id="add-inlineformsetname-button" -->
+            </div>
+        {% endwith %}
+        <!-- inline form for Images end -->
+
+        {#        <div class="form-group">#}
+        {#            <button type="submit" class="btn btn-secondary btn-block">Submit</button>#}
+        {#        </div>#}
+    </form>
+
+{% endblock content %}
+
+{% block script %}
+    <script>
+        function hide_range_fields(){
+                $('input[id*=-from_range]').hide()
+                $('input[id*=-to_range]').hide()
+        }
+        function check_range_fields(){
+
+               $.each($('select[id*=column_type]'), function (index, value){
+                const field = value.value
+                if (field === 'integer'){
+                    $(`input[id=id_images-${index}-from_range]`).show()
+                    $(`input[id=id_images-${index}-to_range]`).show()
+                }
+                else if (field === 'text'){
+                    $(`input[id=id_images-${index}-to_range]`).show()
+                }
+            })
+        }
+
+        function check_order_for_uniqueness(){
+            let order_fields = $('input[id*=order]')
+
+            order_fields.on('change',function(){
+                var arr = [];
+
+                $.each(order_fields, function (index, value) {
+                   arr.push($(value).val());
+                });
+                console.log(arr)
+                console.log($(this))
+                if ($.inArray($(this).val(), arr) !== -1)
+                {
+                    alert("duplicate has been found");
+                }
+            });
+        }
+
+        $(document).ready(function () {
+
+            // Hide delete checkboxes
+            {#$('input[type=checkbox]').hide()#}
+
+            {#check_order_for_uniqueness()#}
+
+            // Manage range fields
+            hide_range_fields()
+            check_range_fields()
+
+            // when user clicks add more btn of columns
+            $('.add-images').click(function (ev) {
+                ev.preventDefault();
+
+                let item_column = $('#item-column')
+
+                const count = item_column.children().length;
+                const tmplMarkup = $('#images-template').html();
+                const compiledTmpl = tmplMarkup.replace(/__prefix__/g, count);
+               item_column.append(compiledTmpl);
+
+               // update form count
+                $('#id_images-TOTAL_FORMS').attr('value', count + 1);
+
+               // manage fields after insertion
+               hide_range_fields()
+               check_range_fields()
+
+                 // Hide delete checkboxes after insertion
+                {#$('input[type=checkbox]').hide()#}
+
+            });
+        });
+    </script>
+{% endblock %}

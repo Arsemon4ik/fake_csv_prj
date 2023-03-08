@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Data sets{% endblock title %}
+
+{% block content %}
+    {% include 'navbar.html' %}
+    <div class="mx-5">
+        <div class="w-50">
+            <div class="d-flex justify-content-start align-items-center">
+                <h2 class="py-3">Sample schema</h2>
+                <a href="{% url 'update_schema' schema.id %}" class="link-primary mx-4">Edit scheme</a>
+            </div>
+            {% if columns %}
+                <table class="table table-bordered">
+                    <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Column name</th>
+                        <th scope="col">Column type</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for column in columns %}
+                        <tr>
+                            <th scope="row">{{ forloop.counter }}</th>
+                            <td>{{ column.column_name }}</td>
+                            <td>{{ column.get_column_type_display }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <h2 class="text-center py-4">No columns yet</h2>
+            {% endif %}
+
+        </div>
+        <div class="w-75">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="py-3">Data sets</h2>
+                {% if columns %}
+                    <form action="" method="post" id="rows_form" class="d-flex justify-content-end">
+                        {% csrf_token %}
+                        <span for="rows" class="align-self-center">Rows: </span>
+                        <input type="number" id="input_rows" name="rows" class="w-25 mx-2" min="1" max="10000" required>
+                        <input type="hidden" name="schema_id" class="w-25 mx-2" value="{{ schema.id }}">
+                        <button type="submit" id="generate_data" class="btn btn-success">Generate data</button>
+                    </form>
+                {% endif %}
+            </div>
+
+            <table class="table table-bordered mb-5">
+                <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Created</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Actions</th>
+                </tr>
+                </thead>
+                <tbody id="data_sets_table">
+                {% if data_sets %}
+                    {% for data_set in data_sets %}
+                        <tr>
+                            <th scope="row">{{ forloop.counter }}</th>
+                            <td>{{ data_set.created|date:"Y-m-d" }}</td>
+                            <td>
+                                {% if data_set.status %}
+                                    <button class="btn-success rounded border-0 px-2">Ready</button>
+                                {% else %}
+                                    <button class="btn-secondary rounded border-0">Processing</button>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if data_set.status %}
+                                    <a href="{{ data_set.file.url }}" class="link-primary">Download</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+                </tbody>
+            </table>
+            {% if not columns %}
+                <h2 class="text-center py-4">Please, create columns first then you will be able to generate your data set 😊</h2>
+            {% endif %}
+
+        </div>
+    </div>
+
+
+
+{% endblock %}
+
+{% block script %}
+    <script>
+        $(document).ready(function () {
+
+            $("[type='number']").keypress(function (evt) {
+                ["e", "E", "+", "-"].includes(evt.key) && evt.preventDefault();
+            });
+
+
+            $('#rows_form').submit(function (e) {
+                    e.preventDefault()
+
+                    $.ajax({
+                        type: "GET",
+                        url: "{% url 'get_last_dataset' schema.id %}",
+                        success: function (response) {
+                            const current_date = moment().format('YYYY-MM-DD');
+                            dataset_html = `
+                                <tr>
+                                    <th scope="row">${response.data + 1}</th>
+                                    <td>${current_date}</td>
+                                    <td class="is_ready_column">
+                                        <button class="btn-secondary rounded border-0 px-2" id="processing">Processing</button>
+                                    </td>
+                                    <td class="file">
+
+                                    </td>
+                                </tr>
+                                    `
+                            $('#data_sets_table').append(dataset_html)
+
+
+                        },
+                        error: function (error) {
+                            console.log(error)
+                        }
+                    })
+
+
+                    $.ajax({
+                        type: 'POST',
+                        data: $(this).serialize(),
+                        url: "{% url 'create_dataset' %}",
+                        // if success
+                        success: function (response) {
+                            $('#processing:last').remove();
+                            $('.is_ready_column:last').append('<button class="btn-success rounded border-0 px-2">Ready</button>')
+                            $('.file:last').append(`<a href="${response['filepath']}" class="link-primary">Download</a>`)
+                            $('#input_rows').val('')
+                        },
+                        // if error
+                        error: function (jqXHR, exception) {
+                            setTimeout(function (){
+                               $('#processing').remove();
+                                $('.is_ready_column:last').append(`<button class="btn-danger rounded border-0 px-2">Fail -> ${jqXHR['responseJSON'].error}</button>`)
+                            }, 500)
+
+                        }
+                    });
+                }
+            )
+        });
+
+    </script>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Login{% endblock title %}
+
+{% block content %}
+    <div class="d-flex align-items-center flex-column justify-content-center vh-100" id="header">
+        <div class="border" style="padding: 86px 250px 100px">
+            <h1 class="display-4 text-center pb-5">Login</h1>
+            <form class="" action="" method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <input name="username" class="form-control form-control-lg" placeholder="Username" type="text"
+                           required>
+                </div>
+                <div class="form-group">
+                    <input name="password" class="form-control form-control-lg" placeholder="Password" type="password"
+                           required>
+                </div>
+{#                                {% if request.GET.next %}#}
+{#                                        <input type="hidden" name="next" value="{{ request.GET.next }}">#}
+{#                                {% endif %}#}
+                <div class="form-group d-flex flex-row-reverse">
+                    <button class="btn btn-primary btn-lg" style="padding: 8px 30px">Login</button>
+                </div>
+            </form>
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} mb-0 alert-dismissible fade show" role="alert">
+                    <strong>Message: </strong> {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}
