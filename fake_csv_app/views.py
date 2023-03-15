@@ -205,15 +205,19 @@ def create_dataset(request):
             column_separator = schema[0].column_separator
             string_character = schema[0].string_character
 
-            # creating csv file and return path
-            csv_path = create_fake_csv(filename=filename,
-                                       fieldnames=field_names,
-                                       order=field_order,
-                                       field_range=field_range,
-                                       delimiter=column_separator,
-                                       string_character=string_character,
-                                       field_types=field_types,
-                                       rows=rows)
+            try:
+                # creating csv file and return path
+                csv_path = create_fake_csv(filename=filename,
+                                           fieldnames=field_names,
+                                           order=field_order,
+                                           field_range=field_range,
+                                           delimiter=column_separator,
+                                           string_character=string_character,
+                                           field_types=field_types,
+                                           rows=rows)
+            except Exception as e:
+                return JsonResponse({"error": f"An error occurred with file creation: {e}"
+                                              f"Please reload the page and try again!"}, status=500)
 
             # create data set if all is fine :)
             data_set = DataSet.objects.create(schema=schema[0])
@@ -224,8 +228,8 @@ def create_dataset(request):
             data_set.save()
 
             # fake processing
-            import time
-            time.sleep(1)
+            # import time
+            # time.sleep(1)
 
             return JsonResponse({"filepath": data_set.file.url}, status=200)
         else:
