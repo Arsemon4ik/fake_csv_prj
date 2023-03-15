@@ -136,10 +136,12 @@
                         url: "{% url 'create_dataset' %}",
                         // if success
                         success: function (response) {
-                            $('#processing:last').remove();
-                            $('.is_ready_column:last').append('<button class="btn-success rounded border-0 px-2">Ready</button>')
-                            $('.file:last').append(`<a href="${response['filepath']}" class="link-primary">Download</a>`)
-                            $('#input_rows').val('')
+                            setTimeout(function(){
+                                $('#processing:last').remove();
+                                $('.is_ready_column:last').append('<button class="btn-success rounded border-0 px-2">Ready</button>')
+                                $('.file:last').append(`<a href="${response['filepath']}" class="link-primary">Download</a>`)
+                                $('#input_rows').val('')
+                            }, 500)
                         },
                         // if error
                         error: function (jqXHR, exception) {
