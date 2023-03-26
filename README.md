@@ -8,3 +8,9 @@ pip install -r requirements.txt
 activate venv Mac (source venv/bin/activate) Win (venv/scripts/activate)
 python manage.py runserver
 ```
+
+## Credentials for login page
+```sh
+login: arseniy
+password: adminadmin
+```
